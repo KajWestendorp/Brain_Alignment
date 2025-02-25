@@ -1,0 +1,30 @@
+models:
+  alexnet:
+    - conv1
+    - conv2
+  resnet50:
+    - conv1
+    - conv2
+    - conv3
+    - conv4
+    - conv5
+
+
+modalities:
+  ephys:
+    - monkeyF
+    - monkeyN
+  fmri:
+    - 01
+    - 02
+  eeg:
+    - 01
+    - 02
+    - 03
+
+
+metrics:
+  rsa:
+    hyperparameters:
+      - n_permutations
+      - n_splits
