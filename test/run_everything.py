@@ -24,7 +24,8 @@ if __name__ == '__main__':
     #         pass
 
     # 1. Select dataset
-    # get_neurodata(dataset_name, subjects, ephys_normalized)
+    thingsF = "THINGS_normMUAF.mat"
+    print(get_neurodata("tvsd", thingsF))
 
     # 2. Select model
 

@@ -10,26 +10,40 @@ import torch
 
 ###################### Helper Functions
 
+from scipy.io import loadmat
+import os
+
+import h5py
+import os
+
 def get_image_paths(file_path, group_name):
+    # Open the .mat file using h5py
     with h5py.File(file_path, "r") as file:
         # Get the specified group
-        group = file[group_name]
-        
-        # Dereference the image path references
-        things_path_refs = group['things_path']
-        image_paths = []
-        
-        # Dereference each reference to retrieve the actual image paths
-        for ref in things_path_refs:
-            ref_obj = file[ref.item()]  # Dereference the reference properly
-            # Convert the uint16 array to a string
-            path_str = ''.join(chr(c) for c in ref_obj[:].flatten())  # Flatten to 1D and convert
-            image_paths.append(path_str)  # Append the string
+        if group_name in file:
+            group = file[group_name]
             
-        # Return the list of image paths
-        return image_paths
+            # Access the 'things_path' dataset in the group
+            things_path_refs = group['things_path']
+            
+            image_paths = []
+            
+            # If 'things_path' is a dataset of references, dereference and convert them to strings
+            for ref in things_path_refs:
+                ref_obj = file[ref]  # Dereference the reference
+                path_str = ''.join(chr(c) for c in ref_obj[:].flatten())  # Convert to string
+                image_paths.append(path_str)  # Append to the list of image paths
+            
+            # Return the list of image paths
+            return image_paths
+        else:
+            raise KeyError(f"Group '{group_name}' not found in the .mat file.")
+
+# Example usage
 file_path = os.path.expanduser("~/Documents/BrainAlign_Data/things_imgsF.mat")
-all_imgs_paths = get_image_paths(file_path, 'things_imgsF')
+all_imgs_paths = get_image_paths(file_path, 'train_imgs')
+
+print(all_imgs_paths)  # This will print the list of image paths
 
 ############################# Low-level Functions: Dataset
 
@@ -136,7 +150,7 @@ def get_dataloader(dataset_name, batch_size=128, num_workers=4):
     if dataset_name == 'THINGS':
         #  Here you want to somehow define your split for training and testing (and I guess also for using the EEG THINGS dataset or the ephys THINGS dataset
         # I did so using the train_tset_split function from sklearn Idk if that's the best way to do it
-        THINGS_PATH = os.path.expanduser("~/Documents/BrainAlign_Data/things_imgsF")
+        THINGS_PATH = os.path.expanduser("~/Documents/BrainAlign_Data/things_imgsF.mat")
         all_imgs_paths = get_image_paths(THINGS_PATH, 'things_imgsF')
         train_imgs_paths, test_imgs_paths = train_test_split(all_imgs_paths, test_size=0.2)
 
