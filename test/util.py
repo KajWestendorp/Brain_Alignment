@@ -29,45 +29,7 @@ def get_image_paths(file_path, group_name):
         # Return the list of image paths
         return image_paths
 
-#For now hardcoding the path to the THINGS dataset
-
-
 ############################# Low-level Functions: Dataset
-
-def get_things_dataloader(image_paths, device="cuda"):
-    """Dataloader for THINGS dataset"""
-
-    # Define the transform (matching AlexNet's ImageNet normalization)
-    transform = transforms.Compose([
-        transforms.Resize((224, 224)),  # Resize to 224x224
-        transforms.ToTensor(),  # Convert to tensor for PyTorch
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # Normalize for ImageNet (doulbe check this)
-    ])
-
-    # Collect the image paths and labels
-    dataset = []
-    labels = []
-    class_names = sorted(os.listdir(image_paths))  
-
-    # Traverse the directories to load images and assign labels based on folder names
-    for label, class_name in enumerate(class_names):
-        class_dir = os.path.join(image_paths, class_name)
-        
-        if os.path.isdir(class_dir):
-            for img_name in os.listdir(class_dir):
-                if img_name.endswith('.jpg'): 
-                    img_path = os.path.join(class_dir, img_name)
-                    image = Image.open(img_path).convert("RGB")
-                    image = transform(image)
-                    dataset.append(image)
-                    labels.append(label)
-
-    # Send dataset and labels to the CUDA device
-    dataset = [image.to(device) for image in dataset]  
-    labels = torch.tensor(labels).to(device)  
-
-    # Return the dataloader
-    return DataLoader(list(zip(dataset, labels)), batch_size=128, num_workers=4)
 
 class THINGS(Dataset):
     def __init__(self, root, paths, transform=None, device='cuda'):
@@ -117,9 +79,7 @@ def get_tvsd(subject_file_path, normalized=True, device="cuda"):
     V4 = train_mua[:, 512:768]
     IT = train_mua[:, 768:1024]
     
-    return V1, V4, IT  # Return the data 
-
-
+    return V1, V4, IT  # Return the data for V1, V4, IT
 
 def get_eeg(subject):
     pass
@@ -148,7 +108,6 @@ def get_dataloader(dataset_name, batch_size=128, num_workers=4):
     from sklearn.model_selection import train_test_split
 
     # Check which dataset and respond accordingly
-    # Train dataloader and test dataloader, hardcode for now, how would i do this?
 
     if dataset_name == 'THINGS':
         #  Here you want to somehow define your split for training and testing (and I guess also for using the EEG THINGS dataset or the ephys THINGS dataset
@@ -174,7 +133,10 @@ def get_dataloader(dataset_name, batch_size=128, num_workers=4):
     return train_dataloader, test_dataloader
 
 def get_model(model_name):
-    pass
+    if model_name == 'alexnet':
+        model = torch.hub.load('pytorch/vision:v0.6.0', 'alexnet', pretrained=True)
+        #Add more later
+    return model
 
 things_train_dataloader, things_test_dataloader = get_dataloader(dataset_name='THINGS')
 
