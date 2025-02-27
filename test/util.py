@@ -16,34 +16,25 @@ import os
 import h5py
 import os
 
-def get_image_paths(file_path, group_name):
-    # Open the .mat file using h5py
+def get_image_paths(file_path, group_name, num_images=None):
     with h5py.File(file_path, "r") as file:
-        # Get the specified group
-        if group_name in file:
-            group = file[group_name]
-            
-            # Access the 'things_path' dataset in the group
-            things_path_refs = group['things_path']
-            
-            image_paths = []
-            
-            # If 'things_path' is a dataset of references, dereference and convert them to strings
-            for ref in things_path_refs:
-                ref_obj = file[ref]  # Dereference the reference
-                path_str = ''.join(chr(c) for c in ref_obj[:].flatten())  # Convert to string
-                image_paths.append(path_str)  # Append to the list of image paths
-            
-            # Return the list of image paths
-            return image_paths
-        else:
-            raise KeyError(f"Group '{group_name}' not found in the .mat file.")
+        group = file[group_name]
+        things_path_refs = group['things_path']
+        image_paths = []
 
-# Example usage
-file_path = os.path.expanduser("~/Documents/BrainAlign_Data/things_imgsF.mat")
-all_imgs_paths = get_image_paths(file_path, 'train_imgs')
+        # Determine the number of images to process
+        total_images = len(things_path_refs) if num_images is None else min(num_images, len(things_path_refs))
 
-print(all_imgs_paths)  # This will print the list of image paths
+        for ref in things_path_refs[:total_images]:
+            ref_obj = file[ref.item()]  
+            path_str = ''.join(chr(c) for c in ref_obj[:].flatten())  
+            path_str = path_str.replace("\\", "/")  # Ensure compatibility across OS
+
+            # Prepend correct image directory
+            full_path = os.path.join("/home/c13739549/Documents/BrainAlign_Data/object_images/", path_str)
+            image_paths.append(full_path)
+        
+    return image_paths
 
 ############################# Low-level Functions: Dataset
 
@@ -58,11 +49,12 @@ class THINGS(Dataset):
 
     def __getitem__(self, idx):
         path = self.paths[idx]
-        img = Image.open(os.path.join(self.root, path))
+        img = Image.open(os.path.join(path))
 
         if self.transform:
             img = self.transform(img)
         return img, 0., idx 
+
     
 class NSD(Dataset):
     def __init__(self, root, paths, transform=None, device='cuda'):
@@ -109,17 +101,18 @@ def get_tvsd(subject_file_path, normalized=True, device="cuda"):
     return V1, V4, IT  # Return the data for V1, V4, IT
 
 def get_eeg(subject):
+    """Dataloader for EEG data"""
     pass
+
+
 
 def get_fmri(subject):
     pass
 
 
-
 ############################# High-level Functions
 
 def get_neurodata(dataset_name, subjects, ephys_normalized=True):
-
     if dataset_name == "tvsd":
         return get_tvsd(subjects, normalized=ephys_normalized)
     elif dataset_name == "eeg":
@@ -150,9 +143,22 @@ def get_dataloader(dataset_name, batch_size=128, num_workers=4):
     if dataset_name == 'THINGS':
         #  Here you want to somehow define your split for training and testing (and I guess also for using the EEG THINGS dataset or the ephys THINGS dataset
         # I did so using the train_tset_split function from sklearn Idk if that's the best way to do it
-        THINGS_PATH = os.path.expanduser("~/Documents/BrainAlign_Data/things_imgsF.mat")
-        all_imgs_paths = get_image_paths(THINGS_PATH, 'things_imgsF')
-        train_imgs_paths, test_imgs_paths = train_test_split(all_imgs_paths, test_size=0.2)
+        THINGS_PATH = os.path.expanduser("~/Documents/BrainAlign_Data/things_images/")  # Correct image directory
+        MAT_FILE_PATH = os.path.expanduser("~/Documents/BrainAlign_Data/things_imgsF.mat")  # Separate .mat file
+        # Example usage
+        file_path = os.path.expanduser("~/Documents/BrainAlign_Data/things_imgsF.mat")
+        train_imgs_paths = get_image_paths(file_path, 'train_imgs')
+
+        # add the test_imgs to the all_imgs_paths
+        test_imgs_paths = get_image_paths(file_path, 'test_imgs')
+        all_imgs_paths = train_imgs_paths + test_imgs_paths
+        img_directory = os.path.expanduser("~/Documents/BrainAlign_Data/object_images")
+
+
+        for i in range(len(train_imgs_paths)):
+            train_imgs_paths[i] = os.path.join(img_directory, os.path.normpath(train_imgs_paths[i].replace('\\', '/')))
+
+        print(all_imgs_paths)
 
         # The below part should then go into the get_things_dataloader function which you then only call here
         train_dataloader, test_dataloader = get_things_dataloader(transform,THINGS_PATH, train_imgs_paths, test_imgs_paths, batch_size=batch_size, num_workers=num_workers)
@@ -204,7 +210,7 @@ def extract_features(model, dataloader, device, return_nodes=None):
     # Iterate over the dataloader to extract features
     with torch.no_grad():
         for item in tqdm.tqdm(dataloader, total=len(dataloader)):
-            imgs, _ = item 
+            imgs, _, _ = item  # Unpack all three returned values
             imgs = imgs.to(device)
             
             batch_activations = model(imgs) 
@@ -234,3 +240,12 @@ return_nodes = {
 # Extract features for specified layers in return nodes
 features_train = extract_features(model, things_train_dataloader, device, return_nodes)
 features_test = extract_features(model, things_test_dataloader, device, return_nodes)
+
+print(features_train.keys())
+print(features_test.keys())
+print(features_train['conv1'].shape)
+print(features_test['conv1'].shape)
+
+
+
+
