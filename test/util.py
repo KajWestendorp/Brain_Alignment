@@ -158,8 +158,6 @@ def get_dataloader(dataset_name, batch_size=128, num_workers=4):
         for i in range(len(train_imgs_paths)):
             train_imgs_paths[i] = os.path.join(img_directory, os.path.normpath(train_imgs_paths[i].replace('\\', '/')))
 
-        print(all_imgs_paths)
-
         # The below part should then go into the get_things_dataloader function which you then only call here
         train_dataloader, test_dataloader = get_things_dataloader(transform,THINGS_PATH, train_imgs_paths, test_imgs_paths, batch_size=batch_size, num_workers=num_workers)
 
@@ -245,6 +243,11 @@ print(features_train.keys())
 print(features_test.keys())
 print(features_train['conv1'].shape)
 print(features_test['conv1'].shape)
+
+
+# print first 5 examples of the extracted features
+print(features_train['conv1'][:5])
+print(features_test['conv1'][:5])
 
 
 
