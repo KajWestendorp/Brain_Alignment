@@ -144,14 +144,14 @@ def get_dataloader(dataset_name, batch_size=128, num_workers=4):
         #  Here you want to somehow define your split for training and testing (and I guess also for using the EEG THINGS dataset or the ephys THINGS dataset
         # I did so using the train_tset_split function from sklearn Idk if that's the best way to do it
         THINGS_PATH = os.path.expanduser("~/Documents/BrainAlign_Data/things_images/")  # Correct image directory
-        MAT_FILE_PATH = os.path.expanduser("~/Documents/BrainAlign_Data/things_imgsF.mat")  # Separate .mat file
+        # MAT_FILE_PATH = os.path.expanduser("~/Documents/BrainAlign_Data/things_imgsF.mat")  # Separate .mat file
         # Example usage
         file_path = os.path.expanduser("~/Documents/BrainAlign_Data/things_imgsF.mat")
         train_imgs_paths = get_image_paths(file_path, 'train_imgs')
 
         # add the test_imgs to the all_imgs_paths
         test_imgs_paths = get_image_paths(file_path, 'test_imgs')
-        all_imgs_paths = train_imgs_paths + test_imgs_paths
+        # all_imgs_paths = train_imgs_paths + test_imgs_paths
         img_directory = os.path.expanduser("~/Documents/BrainAlign_Data/object_images")
 
 
@@ -228,11 +228,7 @@ model = get_model(model_name='alexnet')
 device = torch.device('cuda')
 
 return_nodes = {
-    'features.0': 'conv1', 
-    'features.3': 'conv2', 
-    'features.6': 'conv3', 
-    'features.8': 'conv4', 
-    'features.10': 'conv5'
+    
 }
 
 # Extract features for specified layers in return nodes
