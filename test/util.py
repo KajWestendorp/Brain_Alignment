@@ -158,9 +158,7 @@ def get_dataloader(dataset_name, batch_size=128, num_workers=4):
         for i in range(len(train_imgs_paths)):
             train_imgs_paths[i] = os.path.join(img_directory, os.path.normpath(train_imgs_paths[i].replace('\\', '/')))
 
-        # The below part should then go into the get_things_dataloader function which you then only call here
-        train_dataloader, test_dataloader = get_things_dataloader(transform,THINGS_PATH, train_imgs_paths, test_imgs_paths, batch_size=batch_size, num_workers=num_workers)
-
+        train_dataloader, test_dataloader = get_things_dataloader(transform,img_directory, train_imgs_paths, test_imgs_paths, batch_size=batch_size, num_workers=num_workers)
         return train_dataloader, test_dataloader
         
     elif dataset_name == 'NSD':
@@ -180,7 +178,7 @@ import torch
 import tqdm
 from torchvision.models.feature_extraction import create_feature_extractor
 
-def extract_features(model, dataloader, device, return_nodes=None):
+def extract_features(model, dataloader, device, return_nodes=None, flatten_features=True, apply_pca=False, n_components=100):
     """
     Extracts features from specific layers of a pre-trained model.
 
@@ -189,6 +187,9 @@ def extract_features(model, dataloader, device, return_nodes=None):
         dataloader (DataLoader): DataLoader to fetch images in batches.
         device (torch.device): Device to run inference on (CPU/GPU).
         return_nodes (dict, optional): Dictionary mapping layer names to output names.
+        flatten_features (bool): Whether to flatten features to 2D (samples, features).
+        apply_pca (bool): Whether to apply PCA to reduce feature dimensionality.
+        n_components (int): Number of principal components to keep if PCA is applied.
     
     Returns:
         dict: Dictionary of extracted features from specified layers.
@@ -204,7 +205,6 @@ def extract_features(model, dataloader, device, return_nodes=None):
     # Initialize dictionary to store features for each layer with the key as the layer name
     all_features = {key: [] for key in return_nodes.values()}  
 
-
     # Iterate over the dataloader to extract features
     with torch.no_grad():
         for item in tqdm.tqdm(dataloader, total=len(dataloader)):
@@ -213,37 +213,52 @@ def extract_features(model, dataloader, device, return_nodes=None):
             
             batch_activations = model(imgs) 
             for key, activation in batch_activations.items():
+                # Flatten if needed (for convolutional layers)
+                if flatten_features and len(activation.shape) > 2:
+                    # Keep batch dimension, flatten the rest
+                    activation = activation.reshape(activation.shape[0], -1)
                 all_features[key].append(activation.cpu())  
+                
     # Concatenate all batch features for each layer
     all_features = {key: torch.cat(features, dim=0) for key, features in all_features.items()}
+    
+    # Apply PCA if requested
+    if apply_pca:
+        from sklearn.decomposition import PCA
+        import numpy as np
+        
+        # Create a new dictionary to store the PCA-transformed features
+        pca_features = {}
+        
+        for key, features in all_features.items():
+            # Convert to numpy for sklearn PCA
+            features_np = features.numpy()
+            
+            # Print info about features before PCA
+            print(f"Layer {key}: features shape before PCA: {features_np.shape}")
+            
+            # Apply PCA - use smaller of n_components or feature dimension
+            max_components = min(n_components, features_np.shape[1], features_np.shape[0])
+            pca = PCA(n_components=max_components)
+            
+            # Transform features and convert back to torch tensor
+            reduced_features = pca.fit_transform(features_np)
+            pca_features[key] = torch.tensor(reduced_features, dtype=features.dtype)
+            
+            # Print explained variance
+            explained_variance = sum(pca.explained_variance_ratio_) * 100
+            print(f"Layer {key}: {max_components} components explain {explained_variance:.2f}% of variance")
+            
+        # Replace original features with PCA-reduced features
+        all_features = pca_features
     
     return all_features
 
 
 ###################### Feature Extraction Pipeline
 
-things_train_dataloader, things_test_dataloader = get_dataloader(dataset_name='THINGS')
-
-model = get_model(model_name='alexnet')
-device = torch.device('cuda')
-
-return_nodes = {
-    
-}
-
-# Extract features for specified layers in return nodes
-features_train = extract_features(model, things_train_dataloader, device, return_nodes)
-features_test = extract_features(model, things_test_dataloader, device, return_nodes)
-
-print(features_train.keys())
-print(features_test.keys())
-print(features_train['conv1'].shape)
-print(features_test['conv1'].shape)
 
 
-# print first 5 examples of the extracted features
-print(features_train['conv1'][:5])
-print(features_test['conv1'][:5])
 
 
 
