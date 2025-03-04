@@ -80,6 +80,15 @@ def get_tvsd(subject_file_path, normalized=True, device="cuda"):
     return V1, V4, IT  # Return the data for V1, V4, IT
 
 
+def get_eeg(subject):
+    """Dataloader for EEG data"""
+    pass
+
+
+def get_fmri(subject):
+    pass
+
+
 
 
 ############################# High-level Functions
