@@ -129,22 +129,19 @@ def get_dataloader(dataset_name, batch_size=128, num_workers=4):
 
     # Check which dataset and respond accordingly
     if dataset_name == 'THINGS':
-        #  Here you want to somehow define your split for training and testing (and I guess also for using the EEG THINGS dataset or the ephys THINGS dataset
-        # I did so using the train_tset_split function from sklearn Idk if that's the best way to do it
-        THINGS_PATH = os.path.expanduser("~/Documents/BrainAlign_Data/things_images/")  # Correct image directory
-        # MAT_FILE_PATH = os.path.expanduser("~/Documents/BrainAlign_Data/things_imgsF.mat")  # Separate .mat file
-        # Example usage
-        file_path = os.path.expanduser("~/Documents/BrainAlign_Data/things_imgsF.mat")
+        
+
+        # define directory where THINGS images are stored
+        THINGS_PATH = os.path.expanduser("~/Documents/BrainAlign_Data/things_images/")
+
+        # define path to mat files where image paths are stored
+        file_path = os.path.expanduser("~/Documents/BrainAlign_Data/things_imgs.mat")
         train_imgs_paths = get_image_paths(file_path, 'train_imgs')
 
         # add the test_imgs to the all_imgs_paths
         test_imgs_paths = get_image_paths(file_path, 'test_imgs')
         # all_imgs_paths = train_imgs_paths + test_imgs_paths
         img_directory = os.path.expanduser("~/Documents/BrainAlign_Data/object_images")
-
-
-        for i in range(len(train_imgs_paths)):
-            train_imgs_paths[i] = os.path.join(img_directory, os.path.normpath(train_imgs_paths[i].replace('\\', '/')))
 
         # The below part should then go into the get_things_dataloader function which you then only call here
         train_dataloader, test_dataloader = get_things_dataloader(transform,THINGS_PATH, train_imgs_paths, test_imgs_paths, batch_size=batch_size, num_workers=num_workers)
