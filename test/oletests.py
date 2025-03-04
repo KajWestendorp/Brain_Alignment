@@ -141,7 +141,7 @@ def get_dataloader(dataset_name, batch_size=128, num_workers=4):
         # add the test_imgs to the all_imgs_paths
         test_imgs_paths = get_image_paths(file_path, 'test_imgs')
         # all_imgs_paths = train_imgs_paths + test_imgs_paths
-        img_directory = os.path.expanduser("~/Documents/BrainAlign_Data/object_images")
+        img_directory = os.path.expanduser("~/Documents/BrainAlign_Data/things_images")
 
         # The below part should then go into the get_things_dataloader function which you then only call here
         train_dataloader, test_dataloader = get_things_dataloader(transform,THINGS_PATH, train_imgs_paths, test_imgs_paths, batch_size=batch_size, num_workers=num_workers)
