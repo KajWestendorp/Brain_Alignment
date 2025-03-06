@@ -127,9 +127,9 @@ if __name__ == '__main__':
 
 
     # use the similarity repo to calculate the similarity between the features
-    metrics = ["brainscore/cka"]  # 100% correct name
+    metrics = similarity.make("measure/brainscore/*")
     
-    results = {}
+    results = {} 
     timing_results = {}  # New dictionary to store timing information
 
     # Run the metrics
@@ -171,36 +171,6 @@ if __name__ == '__main__':
             
         except Exception as e:
             print(f"Error with metric {metric}: {str(e)}")
-            
-            # Try alternate metric name if first one fails
-            try:
-                alt_metric = "brainscore/cka"
-                print(f"Trying alternative metric: {alt_metric}")
-                measure = similarity.make(alt_metric)
-                
-                # Time the alternative approach
-                start_time = time.time()
-                
-                # Make sure we're using the 2D version of features for the fallback
-                if 'features_2d' not in locals():
-                    features_2d = features.reshape(features.shape[0], -1).numpy()
-                
-                with tqdm(total=1, desc=f"Computing {alt_metric}") as pbar:
-                    score = measure(V1_numpy, features_2d)
-                    pbar.update(1)
-                    
-                end_time = time.time()
-                execution_time = end_time - start_time
-                
-                results[alt_metric] = score
-                timing_results[alt_metric] = execution_time
-                
-                print(f"Score with alternative metric: {score}")
-                print(f"Execution time for {alt_metric}: {execution_time:.2f} seconds ({execution_time/60:.2f} minutes)")
-                
-            except Exception as e2:
-                print(f"Error with alternative approach: {str(e2)}")
-                continue
 
     # Save the results to a file with timing information
     import json
